@@ -28,9 +28,20 @@ Scope {
         precision: SystemClock.Seconds
       }
 
-      AppLauncher {
-        id: appLauncher
-        anchorWindow: bar
+      property var appLauncher: null
+
+      Component {
+        id: appLauncherComponent
+        AppLauncher {
+          anchorWindow: bar
+        }
+      }
+
+      function toggleLauncher() {
+        if (!appLauncher) {
+          appLauncher = appLauncherComponent.createObject(bar)
+        }
+        appLauncher.open = !appLauncher.open
       }
 
       RowLayout {
@@ -102,7 +113,7 @@ Scope {
             MouseArea {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
-              onClicked: appLauncher.open = !appLauncher.open
+              onClicked: bar.toggleLauncher()
             }
           }
 

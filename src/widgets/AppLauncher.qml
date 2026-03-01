@@ -1,5 +1,6 @@
 import Quickshell
 import Quickshell.Io
+import Quickshell.Widgets
 import QtQuick
 import QtQuick.Layouts
 import "../services"
@@ -23,7 +24,7 @@ PopupWindow {
     if (visible) {
       filterInput.text = ""
       refillModel("")
-      filterInput.forceActiveFocus()
+      Qt.callLater(() => filterInput.forceActiveFocus())
     }
   }
 
@@ -31,12 +32,13 @@ PopupWindow {
     appModel.clear()
     const results = AppIndex.search(query)
     for (const app of results) {
+      const desktopId = (app.id || "").replace(/\.desktop$/i, "")
       appModel.append({
         name: app.name || "",
         genericName: app.genericName || "",
         comment: app.comment || "",
         icon: app.icon || "",
-        desktopId: (app.id || "").replace(/\.desktop$/i, "")
+        desktopId: desktopId
       })
     }
     appList.currentIndex = appModel.count > 0 ? 0 : -1
@@ -49,6 +51,7 @@ PopupWindow {
 
     launchProc.command = ["gtk-launch", app.desktopId]
     launchProc.running = true
+    AppIndex.noteLaunch(app.desktopId)
     open = false
   }
 
@@ -58,6 +61,14 @@ PopupWindow {
     id: launchProc
     command: []
     running: false
+  }
+
+  Connections {
+    target: AppIndex
+    function onApplicationsChanged() {
+      if (launcher.visible)
+        launcher.refillModel(filterInput.text)
+    }
   }
 
   Rectangle {
@@ -74,7 +85,7 @@ PopupWindow {
 
       Rectangle {
         Layout.fillWidth: true
-        implicitHeight: 40
+        implicitHeight: 42
         radius: 10
         color: "#222222"
 
@@ -89,12 +100,17 @@ PopupWindow {
           selectByMouse: true
 
           onTextChanged: launcher.refillModel(text)
+          Keys.forwardTo: [launcher]
+        }
 
-          Keys.onEscapePressed: launcher.open = false
-          Keys.onDownPressed: appList.incrementCurrentIndex()
-          Keys.onUpPressed: appList.decrementCurrentIndex()
-          Keys.onReturnPressed: launcher.launchCurrent()
-          Keys.onEnterPressed: launcher.launchCurrent()
+        Text {
+          anchors.verticalCenter: parent.verticalCenter
+          anchors.left: parent.left
+          anchors.leftMargin: 12
+          text: "Buscar aplicativos..."
+          color: "#77ffffff"
+          font.pixelSize: 15
+          visible: filterInput.text.length === 0
         }
       }
 
@@ -110,9 +126,10 @@ PopupWindow {
           required property string name
           required property string genericName
           required property string comment
+          required property string icon
 
           width: ListView.view.width
-          implicitHeight: 52
+          implicitHeight: 54
           radius: 8
           color: ListView.isCurrentItem ? "#335577aa" : "transparent"
 
@@ -123,10 +140,19 @@ PopupWindow {
             spacing: 10
 
             Rectangle {
-              implicitWidth: 28
-              implicitHeight: 28
+              implicitWidth: 30
+              implicitHeight: 30
               radius: 8
               color: "#2a2a2a"
+
+              Image {
+                anchors.fill: parent
+                anchors.margins: 4
+                fillMode: Image.PreserveAspectFit
+                source: icon && icon.length > 0
+                  ? Quickshell.iconPath(icon, "application-x-executable")
+                  : ""
+              }
 
               Text {
                 anchors.centerIn: parent
@@ -134,6 +160,7 @@ PopupWindow {
                 color: "#ffffff"
                 font.pixelSize: 13
                 font.bold: true
+                visible: !icon || icon.length === 0
               }
             }
 

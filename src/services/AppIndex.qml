@@ -7,10 +7,18 @@ Singleton {
   id: root
 
   property var applications: []
-  property int maxResults: 80
+  property var usage: ({})
+  property int maxResults: 120
 
   function refreshApplications() {
     applications = DesktopEntries.applications.values || []
+  }
+
+  function noteLaunch(appId) {
+    if (!appId) return
+    const id = appId.replace(/\.desktop$/i, "")
+    const current = usage[id] || 0
+    usage[id] = current + 1
   }
 
   function tokenize(text) {
@@ -38,13 +46,14 @@ Singleton {
     return false
   }
 
-  function scoreApp(app, q) {
+  function baseScore(app, q) {
     const name = (app.name || "").toLowerCase()
     const genericName = (app.genericName || "").toLowerCase()
     const comment = (app.comment || "").toLowerCase()
     const id = (app.id || "").toLowerCase()
     const keywords = (app.keywords || []).map(k => (k || "").toLowerCase())
 
+    if (!q) return 1
     if (name === q) return 10000
     if (name.startsWith(q)) return 5000
     if (wordBoundaryMatch(name, q)) return 3000
@@ -62,23 +71,26 @@ Singleton {
     return 0
   }
 
+  function freqBonus(app) {
+    const id = ((app.id || "").replace(/\.desktop$/i, ""))
+    const n = usage[id] || 0
+    return Math.min(1800, Math.floor(Math.log2(n + 1) * 350))
+  }
+
   function search(query) {
     const q = (query || "").trim().toLowerCase()
 
-    let items = (applications || []).filter(app => {
+    const items = (applications || []).filter(app => {
       if (!app) return false
       if (app.noDisplay === true) return false
       return !!(app.name && (app.execString || app.exec || app.id))
     })
 
-    if (!q) {
-      return items.slice(0, maxResults)
-    }
-
     const scored = []
     for (const app of items) {
-      const score = scoreApp(app, q)
-      if (score > 0) scored.push({ app, score })
+      const b = baseScore(app, q)
+      if (b <= 0) continue
+      scored.push({ app, score: b + freqBonus(app) })
     }
 
     scored.sort((a, b) => b.score - a.score)
