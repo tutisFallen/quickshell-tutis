@@ -2,6 +2,8 @@ import Quickshell
 import Quickshell.Hyprland
 import QtQuick
 import QtQuick.Layouts
+import "./widgets"
+import "./services"
 
 Scope {
   Variants {
@@ -24,6 +26,11 @@ Scope {
       SystemClock {
         id: clock
         precision: SystemClock.Seconds
+      }
+
+      AppLauncher {
+        id: appLauncher
+        anchorWindow: bar
       }
 
       RowLayout {
@@ -78,6 +85,26 @@ Scope {
         RowLayout {
           spacing: 10
           Layout.alignment: Qt.AlignVCenter
+
+          Rectangle {
+            implicitWidth: 58
+            implicitHeight: 26
+            radius: 8
+            color: "#331f1f1f"
+
+            Text {
+              anchors.centerIn: parent
+              text: "Apps"
+              color: "#f0f0f0"
+              font.pixelSize: 12
+            }
+
+            MouseArea {
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: appLauncher.open = !appLauncher.open
+            }
+          }
 
           Text {
             text: Qt.formatDateTime(clock.date, "ddd, dd MMM")
