@@ -1,6 +1,6 @@
 import Quickshell
 import Quickshell.Io
-import Quickshell.Widgets
+import Quickshell.Hyprland
 import QtQuick
 import QtQuick.Layouts
 import "../services"
@@ -20,12 +20,26 @@ PopupWindow {
   visible: open
   color: "transparent"
 
+  HyprlandFocusGrab {
+    id: grab
+    windows: [launcher]
+    active: launcher.visible
+    onCleared: launcher.open = false
+  }
+
   onVisibleChanged: {
     if (visible) {
       filterInput.text = ""
       refillModel("")
-      Qt.callLater(() => filterInput.forceActiveFocus())
+      focusTimer.restart()
     }
+  }
+
+  Timer {
+    id: focusTimer
+    interval: 40
+    repeat: false
+    onTriggered: filterInput.forceActiveFocus()
   }
 
   function refillModel(query) {
@@ -98,9 +112,14 @@ PopupWindow {
           font.pixelSize: 16
           clip: true
           selectByMouse: true
+          focus: launcher.visible
 
           onTextChanged: launcher.refillModel(text)
-          Keys.forwardTo: [launcher]
+          Keys.onEscapePressed: launcher.open = false
+          Keys.onDownPressed: appList.incrementCurrentIndex()
+          Keys.onUpPressed: appList.decrementCurrentIndex()
+          Keys.onReturnPressed: launcher.launchCurrent()
+          Keys.onEnterPressed: launcher.launchCurrent()
         }
 
         Text {

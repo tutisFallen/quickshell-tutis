@@ -38,9 +38,7 @@ Scope {
       }
 
       function toggleLauncher() {
-        if (!appLauncher) {
-          appLauncher = appLauncherComponent.createObject(bar)
-        }
+        if (!appLauncher) appLauncher = appLauncherComponent.createObject(bar)
         appLauncher.open = !appLauncher.open
       }
 
@@ -50,8 +48,29 @@ Scope {
         anchors.rightMargin: 12
         spacing: 12
 
+        Rectangle {
+          implicitWidth: 34
+          implicitHeight: 26
+          radius: 8
+          color: "#331f1f1f"
+
+          Image {
+            anchors.fill: parent
+            anchors.margins: 4
+            fillMode: Image.PreserveAspectFit
+            source: Qt.resolvedUrl("../assets/arch-menu.svg")
+          }
+
+          MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: bar.toggleLauncher()
+          }
+        }
+
+        Item { Layout.fillWidth: true }
+
         RowLayout {
-          Layout.fillWidth: true
           Layout.alignment: Qt.AlignVCenter
           spacing: 8
 
@@ -60,7 +79,6 @@ Scope {
 
             Rectangle {
               required property var modelData
-
               radius: 8
               implicitWidth: 34
               implicitHeight: 24
@@ -89,33 +107,8 @@ Scope {
               }
             }
           }
-        }
 
-        Item { Layout.fillWidth: true }
-
-        RowLayout {
-          spacing: 10
-          Layout.alignment: Qt.AlignVCenter
-
-          Rectangle {
-            implicitWidth: 58
-            implicitHeight: 26
-            radius: 8
-            color: "#331f1f1f"
-
-            Text {
-              anchors.centerIn: parent
-              text: "Apps"
-              color: "#f0f0f0"
-              font.pixelSize: 12
-            }
-
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: bar.toggleLauncher()
-            }
-          }
+          Rectangle { width: 1; height: 16; color: "#55ffffff" }
 
           Text {
             text: Qt.formatDateTime(clock.date, "ddd, dd MMM")
@@ -123,11 +116,7 @@ Scope {
             font.pixelSize: 13
           }
 
-          Rectangle {
-            width: 1
-            height: 16
-            color: "#55ffffff"
-          }
+          Rectangle { width: 1; height: 16; color: "#55ffffff" }
 
           Text {
             text: Qt.formatDateTime(clock.date, "HH:mm:ss")
@@ -136,6 +125,8 @@ Scope {
             font.bold: true
           }
         }
+
+        Item { Layout.fillWidth: true }
       }
     }
   }
