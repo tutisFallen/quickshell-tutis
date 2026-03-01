@@ -11,7 +11,7 @@ PopupWindow {
   property bool open: false
 
   anchor.window: anchorWindow
-  anchor.rect.x: parentWindow ? Math.round(parentWindow.width / 2 - width / 2) : 0
+  anchor.rect.x: parentWindow ? Math.round(parentWindow.width / 2 - implicitWidth / 2) : 0
   anchor.rect.y: parentWindow ? Math.round(parentWindow.height + 8) : 8
 
   implicitWidth: 760
@@ -22,25 +22,24 @@ PopupWindow {
   onVisibleChanged: {
     if (visible) {
       filterInput.text = ""
-      filterInput.forceActiveFocus()
       refillModel("")
+      filterInput.forceActiveFocus()
     }
   }
 
   function refillModel(query) {
-    const q = query.trim().toLowerCase()
     appModel.clear()
-
-    for (const app of AppIndex.apps) {
-      const hay = `${app.name} ${app.genericName} ${app.comment}`.toLowerCase()
-      if (!q || hay.includes(q)) {
-        appModel.append(app)
-      }
+    const results = AppIndex.search(query)
+    for (const app of results) {
+      appModel.append({
+        name: app.name || "",
+        genericName: app.genericName || "",
+        comment: app.comment || "",
+        icon: app.icon || "",
+        desktopId: (app.id || "").replace(/\.desktop$/i, "")
+      })
     }
-
-    if (appModel.count > 0) {
-      appList.currentIndex = 0
-    }
+    appList.currentIndex = appModel.count > 0 ? 0 : -1
   }
 
   function launchCurrent() {
@@ -73,60 +72,29 @@ PopupWindow {
       anchors.margins: 14
       spacing: 10
 
-      RowLayout {
+      Rectangle {
         Layout.fillWidth: true
-        spacing: 8
+        implicitHeight: 40
+        radius: 10
+        color: "#222222"
 
-        Rectangle {
-          Layout.fillWidth: true
-          implicitHeight: 40
-          radius: 10
-          color: "#222222"
+        TextInput {
+          id: filterInput
+          anchors.fill: parent
+          anchors.leftMargin: 12
+          anchors.rightMargin: 12
+          color: "#f5f5f5"
+          font.pixelSize: 16
+          clip: true
+          selectByMouse: true
 
-          TextInput {
-            id: filterInput
-            anchors.fill: parent
-            anchors.leftMargin: 12
-            anchors.rightMargin: 12
-            color: "#f5f5f5"
-            font.pixelSize: 16
-            clip: true
-            focus: true
-            selectByMouse: true
+          onTextChanged: launcher.refillModel(text)
 
-            onTextChanged: launcher.refillModel(text)
-
-            Keys.onEscapePressed: launcher.open = false
-            Keys.onDownPressed: appList.incrementCurrentIndex()
-            Keys.onUpPressed: appList.decrementCurrentIndex()
-            Keys.onReturnPressed: launcher.launchCurrent()
-            Keys.onEnterPressed: launcher.launchCurrent()
-
-            Component.onCompleted: launcher.refillModel("")
-          }
-        }
-
-        Rectangle {
-          implicitWidth: 40
-          implicitHeight: 40
-          radius: 10
-          color: "#2a2a2a"
-
-          Text {
-            anchors.centerIn: parent
-            text: "↻"
-            color: "#ffffff"
-            font.pixelSize: 16
-          }
-
-          MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-              AppIndex.reload()
-              launcher.refillModel(filterInput.text)
-            }
-          }
+          Keys.onEscapePressed: launcher.open = false
+          Keys.onDownPressed: appList.incrementCurrentIndex()
+          Keys.onUpPressed: appList.decrementCurrentIndex()
+          Keys.onReturnPressed: launcher.launchCurrent()
+          Keys.onEnterPressed: launcher.launchCurrent()
         }
       }
 
@@ -136,7 +104,6 @@ PopupWindow {
         Layout.fillHeight: true
         clip: true
         model: appModel
-        keyNavigationEnabled: true
 
         delegate: Rectangle {
           required property int index
@@ -145,7 +112,7 @@ PopupWindow {
           required property string comment
 
           width: ListView.view.width
-          implicitHeight: 48
+          implicitHeight: 52
           radius: 8
           color: ListView.isCurrentItem ? "#335577aa" : "transparent"
 
@@ -153,22 +120,42 @@ PopupWindow {
             anchors.fill: parent
             anchors.leftMargin: 12
             anchors.rightMargin: 12
-            spacing: 8
+            spacing: 10
 
-            Text {
-              text: name
-              color: "#ffffff"
-              font.pixelSize: 14
-              Layout.fillWidth: true
-              elide: Text.ElideRight
+            Rectangle {
+              implicitWidth: 28
+              implicitHeight: 28
+              radius: 8
+              color: "#2a2a2a"
+
+              Text {
+                anchors.centerIn: parent
+                text: (name && name.length > 0) ? name.charAt(0).toUpperCase() : "A"
+                color: "#ffffff"
+                font.pixelSize: 13
+                font.bold: true
+              }
             }
 
-            Text {
-              text: genericName || comment
-              color: "#bbbbbb"
-              font.pixelSize: 12
-              elide: Text.ElideRight
-              Layout.preferredWidth: 240
+            ColumnLayout {
+              Layout.fillWidth: true
+              spacing: 2
+
+              Text {
+                text: name
+                color: "#ffffff"
+                font.pixelSize: 14
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+              }
+
+              Text {
+                text: genericName || comment
+                color: "#bbbbbb"
+                font.pixelSize: 12
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+              }
             }
           }
 
